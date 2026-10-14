@@ -6,3 +6,10 @@ matrix-proxy
 /bin/
 *.test
 .env
+
+# Microsite tooling and browser output are not Go build inputs.
+node_modules
+_site
+playwright-report
+test-results
+artifacts/site

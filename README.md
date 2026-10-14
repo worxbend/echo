@@ -9,6 +9,8 @@
 
 **echo** is a lightweight HTTP proxy that sits between your home automation, monitoring stack, or any webhook source and an ESP8266-based 8×8 LED matrix. Send a JSON event, watch the matrix light up.
 
+[**Explore the microsite and Linux setup**](https://worxbend.github.io/echo/) · [Microsite development guide](site/README.md)
+
 ```text
  Webhook / Home Assistant / n8n
            │

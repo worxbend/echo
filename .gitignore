@@ -24,3 +24,10 @@ data/
 .vscode/
 *.swp
 *.swo
+
+# Microsite development and verification output
+/node_modules/
+/_site/
+/test-results/
+/playwright-report/
+/artifacts/site/

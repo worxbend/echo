@@ -1,0 +1,84 @@
+name: Microsite Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'scripts/site-*.mjs'
+      - 'tests/site-*.mjs'
+      - 'tests/site.spec.js'
+      - 'playwright.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/pages.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'scripts/site-*.mjs'
+      - 'tests/site-*.mjs'
+      - 'tests/site.spec.js'
+      - 'playwright.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: microsite-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Infrastructure regression tests
+        run: npm test
+      - name: Build and validate the publishing allowlist
+        run: npm run build:site
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Browser acceptance tests
+        run: npm run test:browser -- --workers=2
+      - name: Save browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: microsite-browser-evidence
+          path: artifacts/site/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload only the checked static artifact
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Deploy checked artifact
+        id: deployment
+        uses: actions/deploy-pages@v4
